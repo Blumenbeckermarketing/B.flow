@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>B.Flow</title>
@@ -310,7 +311,7 @@ code{font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px;}
   </div>
   <div class="topbar-right">
     <div class="sync-pill"><div class="sdot" id="sdot"></div><span id="slbl">Nepřipojeno</span></div>
-    <button class="cfg-btn" onclick="openCfg()">Nastavení API</button>
+    <button class="cfg-btn" onclick="loadRemote()">Načíst Supabase</button>
   </div>
 </div>
 
@@ -543,20 +544,17 @@ code{font-size:11px;background:var(--bg);padding:2px 5px;border-radius:4px;}
     <div class="mactions"><button class="mbtn2" onclick="closeRepRow()">Zrušit</button><button class="mbtn2 p" onclick="saveRepRow()">Přidat</button></div>
   </div>
 </div>
-
-<div class="ov" id="cfgMod">
-  <div class="mod">
-    <h3>Nastavení synchronizace</h3>
-    <p class="cfginfo">Zaregistruj se zdarma na <a href="https://jsonbin.io" target="_blank">jsonbin.io</a>. Vytvoř Bin s obsahem <code>{"weeks":{},"projects":[],"notes":"","events":[],"posts":[]}</code> a vlož klíče níže.</p>
-    <label>API klíč (X-Master-Key)</label><input id="cfgKey" placeholder="$2b$10$...">
-    <label>Bin ID</label><input id="cfgBin" placeholder="6abc1234...">
-    <div class="mactions"><button class="mbtn2" onclick="closeCfg()">Zrušit</button><button class="mbtn2 p" onclick="saveCfg()">Uložit a synchronizovat</button></div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
+
+
+const SUPABASE_URL = 'https://rplmsczokcptryrypxrg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_AopIf-ZuF-N3gYTod_pJvg_BzilNGkl';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+
 let S={weeks:{},projects:[],notes:'',events:[],posts:[],reportRows:{},noteCards:[],cardTitles:{}};
 let curWk='',viewWk='';
 let editProjIdx=null,editEvIdx=null,openEvIdx=null,editPostIdx=null;
@@ -1263,13 +1261,113 @@ function deletePost(){if(!confirm('Smazat příspěvek?'))return;S.posts.splice(
 function updCC(){const l=(document.getElementById('postContent').textContent||'').length;document.getElementById('pcc').textContent=`${l} znaků`;}
 
 // ── SYNC ──
-function openCfg(){document.getElementById('cfgKey').value=localStorage.getItem('bf_key')||'';document.getElementById('cfgBin').value=localStorage.getItem('bf_bin')||'';document.getElementById('cfgMod').classList.add('on');}
-function closeCfg(){document.getElementById('cfgMod').classList.remove('on');}
-function saveCfg(){localStorage.setItem('bf_key',document.getElementById('cfgKey').value.trim());localStorage.setItem('bf_bin',document.getElementById('cfgBin').value.trim());closeCfg();loadRemote();}
-function creds(){return{key:localStorage.getItem('bf_key'),bin:localStorage.getItem('bf_bin')};}
-function syncSt(s){const d=document.getElementById('sdot');d.className='sdot '+s;document.getElementById('slbl').textContent={ok:'Synchronizováno',syncing:'Ukládám...',err:'Chyba','':'Nepřipojeno'}[s]||'Nepřipojeno';}
-async function loadRemote(){const{key,bin}=creds();if(!key||!bin){syncSt('');return;}syncSt('syncing');try{const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{headers:{'X-Master-Key':key}});if(!r.ok)throw 0;const d=await r.json();S=d.record||S;['events','posts'].forEach(k=>{if(!S[k])S[k]=[];});if(!S.reportRows)S.reportRows={};if(!S.noteCards)S.noteCards=[];if(!S.cardTitles)S.cardTitles={};syncSt('ok');renderAll();loadCardTitles();}catch{syncSt('err');}}
-function save(){localStorage.setItem('bf_local',JSON.stringify(S));clearTimeout(saveTO);saveTO=setTimeout(async()=>{const{key,bin}=creds();if(!key||!bin)return;syncSt('syncing');try{const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':key},body:JSON.stringify(S)});if(!r.ok)throw 0;syncSt('ok');}catch{syncSt('err');}},800);}
+//function openCfg(){document.getElementById('cfgKey').value=localStorage.getItem('bf_key')||'';document.getElementById('cfgBin').value=localStorage.getItem('bf_bin')||'';document.getElementById('cfgMod').classList.add('on');}
+//function closeCfg(){document.getElementById('cfgMod').classList.remove('on');}
+//function saveCfg(){localStorage.setItem('bf_key',document.getElementById('cfgKey').value.trim());localStorage.setItem('bf_bin',document.getElementById('cfgBin').value.trim());closeCfg();loadRemote();}
+//function creds(){return{key:localStorage.getItem('bf_key'),bin:localStorage.getItem('bf_bin')};}
+//function syncSt(s){const d=document.getElementById('sdot');d.className='sdot '+s;document.getElementById('slbl').textContent={ok:'Synchronizováno',syncing:'Ukládám...',err:'Chyba','':'Nepřipojeno'}[s]||'Nepřipojeno';}
+//async function loadRemote(){const{key,bin}=creds();if(!key||!bin){syncSt('');return;}syncSt('syncing');try{const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{headers:{'X-Master-Key':key}});if(!r.ok)throw 0;const d=await r.json();S=d.record||S;['events','posts'].forEach(k=>{if(!S[k])S[k]=[];});if(!S.reportRows)S.reportRows={};if(!S.noteCards)S.noteCards=[];if(!S.cardTitles)S.cardTitles={};syncSt('ok');renderAll();loadCardTitles();}catch{syncSt('err');}}
+//function save(){localStorage.setItem('bf_local',JSON.stringify(S));clearTimeout(saveTO);saveTO=setTimeout(async()=>{const{key,bin}=creds();if(!key||!bin)return;syncSt('syncing');try{const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':key},body:JSON.stringify(S)});if(!r.ok)throw 0;syncSt('ok');}catch{syncSt('err');}},800);}
+
+   
+    const SUPABASE_TABLE = 'app_state';
+    const SUPABASE_ROW_ID = 'main';
+
+    function openCfg() {
+        toast('Supabase je nastavený v kódu.');
+    }
+
+    function closeCfg() {
+        document.getElementById('cfgMod')?.classList.remove('on');
+    }
+
+    function syncSt(s) {
+        const d = document.getElementById('sdot');
+        d.className = 'sdot ' + s;
+        document.getElementById('slbl').textContent = {
+            ok: 'Synchronizováno',
+            syncing: 'Ukládám...',
+            err: 'Chyba',
+            '': 'Nepřipojeno'
+        }[s] || 'Nepřipojeno';
+    }
+
+    function normalizeState() {
+        if (!S.weeks) S.weeks = {};
+        if (!S.projects) S.projects = [];
+        if (!S.notes) S.notes = '';
+        if (!S.events) S.events = [];
+        if (!S.posts) S.posts = [];
+        if (!S.reportRows) S.reportRows = {};
+        if (!S.noteCards) S.noteCards = [];
+        if (!S.cardTitles) S.cardTitles = {};
+    }
+
+    async function loadRemote() {
+        syncSt('syncing');
+
+        try {
+            const { data, error } = await db
+                .from(SUPABASE_TABLE)
+                .select('data')
+                .eq('id', SUPABASE_ROW_ID)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data?.data) {
+                S = data.data;
+                normalizeState();
+                localStorage.setItem('bf_local', JSON.stringify(S));
+            } else {
+                await save(true);
+            }
+
+            syncSt('ok');
+            renderAll();
+            loadCardTitles();
+        } catch (err) {
+            console.error('Supabase load error:', err);
+            syncSt('err');
+        }
+    }
+
+    function save(immediate = false) {
+        normalizeState();
+        localStorage.setItem('bf_local', JSON.stringify(S));
+
+        clearTimeout(saveTO);
+
+        const doSave = async () => {
+            syncSt('syncing');
+
+            try {
+                const { error } = await db
+                    .from(SUPABASE_TABLE)
+                    .upsert({
+                        id: SUPABASE_ROW_ID,
+                        data: S,
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (error) throw error;
+
+                syncSt('ok');
+            } catch (err) {
+                console.error('Supabase save error:', err);
+                syncSt('err');
+            }
+        };
+
+        if (immediate) {
+            return doSave();
+        }
+
+        saveTO = setTimeout(doSave, 800);
+    }
+
+
+
 
 // ── INIT ──
 function init(){
